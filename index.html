@@ -125,4 +125,567 @@
                 </div>
                 <div class="md:col-span-3">
                     <label class="block text-xs font-bold text-slate-500 mb-1">開始時間</label>
-                    <input type="time" id
+                    <input type="time" id="f-start" class="w-full text-sm border-slate-300 rounded-md shadow-sm p-2 border" onkeydown="handleEnter(event, 'f-end')">
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">終了時間</label>
+                    <input type="time" id="f-end" class="w-full text-sm border-slate-300 rounded-md shadow-sm p-2 border" onkeydown="handleEnter(event, 'f-desc')">
+                </div>
+
+                <div class="md:col-span-8">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">内容・備考</label>
+                    <input type="text" id="f-desc" placeholder="活動内容を入力..." class="w-full text-sm border-slate-300 rounded-md shadow-sm p-2 border" onkeydown="handleEnter(event, 'btn-submit')">
+                </div>
+                 <div class="md:col-span-2 flex items-center justify-center h-10 bg-slate-50 rounded border border-slate-200 mb-[1px]">
+                    <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
+                        <input type="checkbox" id="f-continuous" class="rounded border-slate-300 text-blue-600">
+                        <span>連続出動</span>
+                    </label>
+                </div>
+                <div class="md:col-span-2">
+                    <button id="btn-submit" onclick="submitEvent()" class="w-full text-white font-medium h-10 rounded-md shadow-sm flex justify-center items-center gap-1 transition-colors bg-blue-600 hover:bg-blue-700">
+                        <span id="btn-submit-icon"></span> <span id="btn-submit-text">追加</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3 mb-4 px-2 print:mb-2 print-break-avoid" id="legend-container"></div>
+
+        <div class="relative bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden min-h-[180px] mb-8 print:shadow-none print:border print:mb-2 print-break-avoid print-chart-container">
+            <div class="overflow-x-auto pb-4 pt-4 relative min-w-[1200px] print-full-width print-chart-inner">
+                <div class="absolute top-4 left-4 right-4 h-6 pointer-events-none select-none z-20 print-time-label" id="timeline-labels"></div>
+                <div class="absolute top-10 left-4 right-4 bottom-4 pointer-events-none select-none z-0 print-grid-line" id="timeline-grids"></div>
+                <div class="relative h-24 mt-10 mx-4 z-10 print-chart-height">
+                    <div class="absolute top-1/2 left-0 w-full h-px bg-slate-200 print:bg-slate-300 -z-10"></div>
+                    <div id="timeline-bars"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border print-break-avoid">
+            <div class="bg-slate-50 px-6 py-3 border-b border-slate-200 font-semibold text-slate-700 flex items-center gap-2 text-sm print:bg-white print:border-b-2 print:border-slate-800 print:py-tight">
+                <span id="icon-list-title"></span> 登録済みデータリスト
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm print-text-xs">
+                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase print:bg-white print:text-black print:border-b">
+                        <tr class="print-list-header">
+                            <th class="px-4 py-3 w-16 print:py-tight">種別</th>
+                            <th class="px-4 py-3 w-24 print:py-tight">No/ID</th>
+                            <th class="px-4 py-3 w-32 print:py-tight">時間</th>
+                            <th class="px-4 py-3 w-24 print:py-tight">所要時間</th>
+                            <th class="px-4 py-3 print:py-tight">内容</th>
+                            <th class="px-4 py-3 w-24 text-center no-print">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="event-list-body" class="divide-y divide-slate-100 print:divide-slate-200"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="hidden print:block print-footer" id="print-footer-text"></div>
+    </div>
+
+    <div id="modal-manual" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 no-print" onclick="toggleModal('modal-manual')">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-lg font-bold flex items-center gap-2"><span id="icon-book2" class="text-blue-600"></span> 運用マニュアル・定義書</h2>
+                <button onclick="toggleModal('modal-manual')" class="text-slate-400 hover:text-slate-600"><span id="icon-x2"></span></button>
+            </div>
+            <div class="prose prose-sm text-slate-700">
+                <h3 class="font-bold text-slate-900 mb-2">1. 業務種別の定義</h3>
+                <ul class="list-disc pl-5 mb-4 space-y-1">
+                    <li><span class="font-bold text-blue-700">ヘリ活動 (実施):</span> 通常の患者搬送等のミッション完了。</li>
+                    <li><span class="font-bold text-gray-600">ヘリ活動 (キャンセル):</span> 現場や上空でのキャンセル。</li>
+                    <li><span class="font-bold text-orange-600">始業点検・整備:</span> 始業前点検、定時点検など。</li>
+                    <li><span class="font-bold text-rose-500">補助者業務:</span> 運航補助、資機材管理など。</li>
+                    <li><span class="font-bold text-slate-600">管理業務:</span> 事務処理、報告書作成など。</li>
+                    <li><span class="font-bold text-teal-600">グループ業務/会議:</span> ブリーフィング、カンファレンスなど。</li>
+                </ul>
+                <h3 class="font-bold text-slate-900 mb-2">2. 時間の自動計算ルール</h3>
+                <div class="bg-slate-50 p-3 rounded mb-4 border border-slate-200">
+                    <p class="font-bold mb-1">離陸スタンバイ (10分)</p>
+                    <p class="text-xs mb-2">「ヘリ活動」の開始10分前を自動的にスタンバイ時間として表示します。ただし、前の事案が「連続出動」の場合は表示されません。</p>
+                    <p class="font-bold mb-1">復帰時間</p>
+                    <ul class="list-disc pl-5 text-xs">
+                        <li>キャンセル: <strong>+10分</strong></li>
+                        <li>活動1時間未満: <strong>+30分</strong></li>
+                        <li>活動1時間以上: <strong>+45分</strong></li>
+                        <li>連続出動: <strong>0分</strong></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-6 text-right">
+                <button onclick="toggleModal('modal-manual')" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-qr" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 no-print" onclick="toggleModal('modal-qr')">
+        <div class="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center justify-center" onclick="event.stopPropagation()">
+            <p class="text-sm font-bold text-slate-700 mb-4">このページのURL用QRコード</p>
+            <canvas id="qr-canvas"></canvas>
+            <p class="text-xs text-slate-500 mt-4 break-all max-w-xs text-center" id="qr-url-text"></p>
+            <button onclick="toggleModal('modal-qr')" class="mt-4 bg-slate-200 text-slate-700 px-4 py-2 rounded text-sm hover:bg-slate-300">閉じる</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. 定数と初期データ定義
+        // ==========================================
+        const START_HOUR = 8;
+        const END_HOUR = 19;
+        const TOTAL_HOURS = END_HOUR - START_HOUR;
+        const TOTAL_MINUTES = TOTAL_HOURS * 60;
+        
+        // SVGアイコンの文字列（React排除のためHTML文字列として扱う）
+        const SVGS = {
+            ClipboardList: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 12h.01"/><path d="M13 12h5"/><path d="M9 16h.01"/><path d="M13 16h5"/><path d="M9 8h.01"/><path d="M13 8h5"/></svg>',
+            Plus: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+            Trash2: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+            RotateCcw: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+            Briefcase: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+            Users: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+            Settings: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+            FileSpreadsheet: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M10 9v8"/></svg>',
+            User: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+            Edit3: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
+            X: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+            Printer: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+            BookOpen: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+            AlertCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+            CheckCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+            Activity: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+            Folder: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+            Mail: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+            Sun: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+            Moon: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+            Clock: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+            QrCode: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M3 14h7v7H3z"/></svg>'
+        };
+
+        // カテゴリ定義
+        const CATEGORIES = {
+            mission: { label: 'ヘリ活動 (実施)', color: 'bg-blue-600 border-blue-700', icon: 'CheckCircle', hasPrep: true, hasRecovery: true },
+            cancel: { label: 'ヘリ活動 (キャンセル)', color: 'bg-gray-400 border-gray-500', icon: 'AlertCircle', hasPrep: true, hasRecovery: true },
+            inspection: { label: '始業点検・整備', color: 'bg-orange-400 border-orange-500', icon: 'Settings', hasPrep: false, hasRecovery: false },
+            assistant: { label: '補助者業務', color: 'bg-rose-400 border-rose-500', icon: 'Activity', hasPrep: false, hasRecovery: false },
+            management: { label: '管理業務', color: 'bg-slate-500 border-slate-600', icon: 'Folder', hasPrep: false, hasRecovery: false },
+            group: { label: 'グループ業務/会議', color: 'bg-teal-500 border-teal-600', icon: 'Users', hasPrep: false, hasRecovery: false },
+            other: { label: 'その他活動', color: 'bg-purple-500 border-purple-600', icon: 'Briefcase', hasPrep: false, hasRecovery: false }
+        };
+
+        const REASON_OPTIONS = ["風向き", "天候不良", "強風", "機体トラブル"];
+
+        const INITIAL_EVENTS = [
+            { id: '19248', category: 'mission', no: '19248', start: '08:46', end: '09:13', desc: '浜町HP〜LZ移動(12分)・待機 → 09:01接触 → 09:13引継完了。LZより次事案へ。', isContinuous: true },
+            { id: '19249', category: 'mission', no: '19249', start: '09:22', end: '10:24', desc: '19248LZより直行 → 鹿児島医療センター受入 → 浜町HP引継終了', isContinuous: false },
+            { id: '19253', category: 'cancel', no: '19253', start: '11:18', end: '11:26', desc: '上空キャンセル（救急隊のみで対応可能）', isContinuous: false },
+            { id: '19254', category: 'cancel', no: '19254', start: '12:09', end: '12:29', desc: '上空キャンセル → そのまま次事案対応', isContinuous: true },
+            { id: '19255', category: 'mission', no: '19255', start: '12:29', end: '13:44', desc: '浜町HP離陸 → 現場活動 → 基地病院引継 → 浜町HP帰投', isContinuous: false },
+            { id: '19256', category: 'mission', no: '19256', start: '14:19', end: '15:17', desc: '浜町HP離陸 → 現場活動 → 基地病院引継 → 浜町HP帰投', isContinuous: false },
+            { id: '19257', category: 'mission', no: '19257', start: '15:55', end: '17:18', desc: '浜町HP離陸 → 他医療機関へ搬送 → 浜町HP帰投', isContinuous: false },
+            { id: 'inspection-1', category: 'inspection', no: '', start: '08:30', end: '08:46', desc: '始業前点検・ブリーフィング（要請により中断）', isContinuous: false },
+        ];
+
+        // 状態管理
+        let events = [...INITIAL_EVENTS];
+        let editingId = null;
+
+        // ==========================================
+        // 2. 初期化・ユーティリティ関数
+        // ==========================================
+        window.onload = function() {
+            // アイコン描画
+            document.getElementById('icon-clipboard').innerHTML = `<div class="w-5 h-5">${SVGS.ClipboardList}</div>`;
+            document.getElementById('icon-book').innerHTML = `<div class="w-3.5 h-3.5">${SVGS.BookOpen}</div>`;
+            document.getElementById('icon-book2').innerHTML = `<div class="w-5 h-5">${SVGS.BookOpen}</div>`;
+            document.getElementById('icon-qrcode').innerHTML = `<div class="w-3.5 h-3.5">${SVGS.QrCode}</div>`;
+            document.getElementById('icon-rotate').innerHTML = `<div class="w-3 h-3">${SVGS.RotateCcw}</div>`;
+            document.getElementById('icon-printer').innerHTML = `<div class="w-3.5 h-3.5">${SVGS.Printer}</div>`;
+            document.getElementById('icon-spreadsheet').innerHTML = `<div class="w-3.5 h-3.5">${SVGS.FileSpreadsheet}</div>`;
+            document.getElementById('icon-mail').innerHTML = `<div class="w-3.5 h-3.5">${SVGS.Mail}</div>`;
+            document.getElementById('icon-user1').innerHTML = `<div class="w-4 h-4">${SVGS.User}</div>`;
+            document.getElementById('icon-user2').innerHTML = `<div class="w-4 h-4">${SVGS.User}</div>`;
+            document.getElementById('icon-x').innerHTML = `<div class="w-3 h-3">${SVGS.X}</div>`;
+            document.getElementById('icon-x2').innerHTML = `<div class="w-5 h-5">${SVGS.X}</div>`;
+            document.getElementById('icon-list-title').innerHTML = `<div class="w-4 h-4">${SVGS.ClipboardList}</div>`;
+            document.getElementById('form-header-icon').innerHTML = `<div class="w-4 h-4">${SVGS.Plus}</div>`;
+            document.getElementById('btn-submit-icon').innerHTML = `<div class="w-4 h-4">${SVGS.Plus}</div>`;
+
+            // 本日の日付セット
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('info-date').value = today;
+            
+            // 出力用日付セット
+            const printDateStr = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            document.getElementById('print-footer-text').innerText = `ドクターヘリ業務日報 | 出力日: ${printDateStr}`;
+
+            // セレクトボックス生成
+            const catSelect = document.getElementById('f-category');
+            for(let key in CATEGORIES) {
+                const opt = document.createElement('option');
+                opt.value = key; opt.innerText = CATEGORIES[key].label;
+                catSelect.appendChild(opt);
+            }
+
+            // 待機理由チェックボックス生成
+            const rcBox = document.getElementById('reason-checkboxes');
+            REASON_OPTIONS.forEach(reason => {
+                const label = document.createElement('label');
+                label.className = "flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-slate-200 text-sm hover:bg-slate-50";
+                label.innerHTML = `<input type="checkbox" value="${reason}" class="reason-cb rounded border-slate-300 text-blue-600 focus:ring-blue-500" onchange="updateReasonSummary()"> ${reason}`;
+                rcBox.appendChild(label);
+            });
+
+            // タイムライン背景(ラベル・グリッド)生成
+            let labelsHtml = ''; let gridsHtml = '';
+            for(let i=0; i<=TOTAL_HOURS; i++) {
+                const left = (i / TOTAL_HOURS) * 100;
+                labelsHtml += `<div class="absolute transform -translate-x-1/2" style="left: ${left}%"><span class="text-xs font-bold text-slate-400 print:text-slate-600 print-text-xs">${START_HOUR + i}:00</span></div>`;
+                gridsHtml += `<div class="absolute top-0 bottom-0 w-px bg-slate-100 print:bg-slate-200 transform -translate-x-1/2" style="left: ${left}%"></div>`;
+                if(i < TOTAL_HOURS) {
+                    gridsHtml += `<div class="absolute top-0 bottom-0 w-px border-l border-slate-200 border-dashed opacity-60 print:opacity-40 transform -translate-x-1/2" style="left: ${((i + 0.5) / TOTAL_HOURS) * 100}%"></div>`;
+                }
+            }
+            document.getElementById('timeline-labels').innerHTML = labelsHtml;
+            document.getElementById('timeline-grids').innerHTML = gridsHtml;
+
+            // レジェンド生成
+            let legendHtml = '';
+            for(let key in CATEGORIES) {
+                const c = CATEGORIES[key];
+                legendHtml += `
+                    <div class="flex items-center gap-2 text-xs bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm print:border-slate-300 print:shadow-none print:py-tight print:mb-1">
+                        <div class="w-3 h-3 rounded-full ${c.color.split(' ')[0]} print-color-adjust"></div>
+                        <span class="text-slate-500 print:text-black hidden print:inline"><div class="w-3 h-3">${SVGS[c.icon]}</div></span>
+                        <span class="text-slate-700">${c.label}</span>
+                    </div>`;
+            }
+            legendHtml += `
+                <div class="flex items-center gap-2 text-xs bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm print:border-slate-300 print:py-tight print:mb-1">
+                    <div class="w-3 h-3 bg-yellow-400 opacity-50 striped-bg print-color-adjust"></div><span class="text-slate-500">離陸スタンバイ</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm print:border-slate-300 print:py-tight print:mb-1">
+                    <div class="w-3 h-3 bg-green-100 border border-green-200 print-color-adjust"></div><span class="text-slate-500">復帰作業</span>
+                </div>`;
+            document.getElementById('legend-container').innerHTML = legendHtml;
+
+            // 各種バインディング更新
+            updateSunTimes();
+            updateReasonSummary();
+            renderAll();
+            
+            // 印刷用リアルタイム反映
+            document.getElementById('info-recorder').addEventListener('input', e => document.getElementById('print-recorder-display').innerText = e.target.value || '(未入力)');
+            document.getElementById('info-doctor').addEventListener('input', e => document.getElementById('print-doctor-display').innerText = e.target.value || '(未入力)');
+        };
+
+        // --- 日の出日の入り計算 ---
+        function updateSunTimes() {
+            const dateStr = document.getElementById('info-date').value;
+            document.getElementById('print-date-display').innerText = dateStr;
+            if(!dateStr || typeof SunCalc === 'undefined') return;
+            const date = new Date(dateStr);
+            const lat = 31.5602; const lon = 130.558;
+            const times = SunCalc.getTimes(date, lat, lon);
+            const fmt = d => d.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'});
+            
+            const sunset = times.sunset;
+            const sunsetMinus1h = new Date(sunset.getTime() - 60*60*1000);
+            const fixed1730 = new Date(date); fixed1730.setHours(17, 30, 0);
+            const standbyEnd = (sunsetMinus1h < fixed1730) ? sunsetMinus1h : fixed1730;
+
+            const sunHtml = `
+                <div class="flex items-center gap-1"><div class="w-3 h-3">${SVGS.Sun}</div> <span>${fmt(times.sunrise)}</span></div>
+                <div class="flex items-center gap-1"><div class="w-3 h-3">${SVGS.Moon}</div> <span>${fmt(times.sunset)}</span></div>
+                <div class="flex items-center gap-1 border-l border-amber-200 pl-2 ml-1 font-bold"><div class="w-3 h-3">${SVGS.Clock}</div> <span>待機終了: ${fmt(standbyEnd)}</span></div>
+            `;
+            document.getElementById('web-sun-display').innerHTML = sunHtml;
+            document.getElementById('print-sun-display').innerHTML = sunHtml;
+        }
+
+        // --- 待機理由まとめ ---
+        function updateReasonSummary() {
+            const cbs = Array.from(document.querySelectorAll('.reason-cb:checked')).map(cb => cb.value);
+            const other = document.getElementById('info-other-reason').value.trim();
+            if(other) cbs.push(other);
+            const text = cbs.length > 0 ? cbs.join('、') : '特になし';
+            document.getElementById('print-reason-display').innerText = text;
+            return text;
+        }
+
+        // ==========================================
+        // 3. データ処理と描画 (Render)
+        // ==========================================
+        function timeToMinutes(ts) {
+            if(!ts) return 0;
+            const [h, m] = ts.split(':').map(Number);
+            return (h - START_HOUR) * 60 + m;
+        }
+
+        function getPosition(startMins, duration) {
+            return { left: (startMins / TOTAL_MINUTES) * 100, width: (duration / TOTAL_MINUTES) * 100 };
+        }
+
+        function renderAll() {
+            events.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+            
+            const barsContainer = document.getElementById('timeline-bars');
+            const listContainer = document.getElementById('event-list-body');
+            let barsHtml = ''; let listHtml = '';
+
+            events.forEach((ev, i) => {
+                const sMins = timeToMinutes(ev.start);
+                const eMins = timeToMinutes(ev.end);
+                const dur = eMins - sMins;
+                const cat = CATEGORIES[ev.category] || CATEGORIES.other;
+
+                let prep = cat.hasPrep ? 10 : 0;
+                if(i > 0 && events[i-1].isContinuous) prep = 0;
+                let rec = 0;
+                if(!ev.isContinuous && cat.hasRecovery) {
+                    if(ev.category === 'cancel') rec = 10;
+                    else if(dur < 60) rec = 30;
+                    else rec = 45;
+                }
+
+                const mainPos = getPosition(sMins, dur);
+                const prepPos = getPosition(sMins - prep, prep);
+                const recPos = getPosition(eMins, rec);
+
+                // --- タイムラインバー生成 ---
+                let barStr = `<div class="absolute h-full pointer-events-none" style="width:100%; top:0; z-index:20;">`;
+                
+                // 準備
+                if(prep > 0) {
+                    barStr += `<div class="absolute transform -translate-y-1/2 h-10 bg-yellow-400/30 border-l border-t border-b border-yellow-400/50 rounded-l-md pointer-events-auto print-color-adjust print-chart-bar-wrapper" style="top:50%; left:${prepPos.left}%; width:${prepPos.width}%; background-image:linear-gradient(45deg, rgba(255,255,255,.3) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.3) 50%, rgba(255,255,255,.3) 75%, transparent 75%, transparent); background-size:10px 10px;" title="離陸スタンバイ(10分)"></div>`;
+                }
+
+                // メインバー (groupクラスを利用してホバーでツールチップ表示)
+                barStr += `
+                    <div class="absolute transform -translate-y-1/2 transition-all duration-200 pointer-events-auto group rounded-md border-b-4 shadow-sm flex flex-col justify-center items-center cursor-pointer overflow-visible ${cat.color} print-color-adjust print-chart-bar-wrapper print-chart-bar hover:scale-105 hover:shadow-md hover:brightness-110 hover:z-30" style="top:50%; left:${mainPos.left}%; width:${mainPos.width}%; height:64px;" onclick="editEvent('${ev.id}')">
+                        <div class="flex items-center gap-1 text-white font-bold text-xs px-1"><div class="w-4 h-4 print:w-3 print:h-3 print-icon-size">${SVGS[cat.icon]}</div></div>
+                        <div class="hidden group-hover:block absolute bottom-full mb-2 w-64 bg-slate-800 text-white text-xs rounded p-3 shadow-xl z-50 left-1/2 -translate-x-1/2 no-print cursor-default pointer-events-none">
+                            <div class="font-bold text-yellow-400 mb-1 flex items-center justify-between"><span>${ev.no ? '#'+ev.no : cat.label}</span><span class="text-[10px] bg-white/20 px-1 rounded">${ev.category}</span></div>
+                            <div class="mb-2 text-slate-300 font-mono border-b border-slate-600 pb-1">${ev.start} - ${ev.end} (${dur}分)${prep===0 ? '<span class="ml-2 text-green-300 font-bold">(直行)</span>':''}</div>
+                            <div class="leading-relaxed whitespace-normal">${ev.desc}</div>
+                            <div class="mt-2 pt-1 text-center text-amber-400 text-[10px]">クリックで修正</div>
+                        </div>
+                    </div>`;
+
+                // 復帰
+                if(rec > 0) {
+                    barStr += `<div class="absolute transform -translate-y-1/2 h-10 bg-green-50 border border-green-200 border-l-0 rounded-r-md pointer-events-auto flex items-center justify-center print-color-adjust print-chart-bar-wrapper" style="top:50%; left:${recPos.left}%; width:${recPos.width}%" title="復帰作業(${rec}分)"></div>`;
+                }
+                barStr += `</div>`;
+                barsHtml += barStr;
+
+                // --- リスト行生成 ---
+                listHtml += `
+                    <tr class="transition-colors hover:bg-slate-50 print-list-row print:bg-white">
+                        <td class="px-4 py-3 print:py-tight">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full ${cat.color.split(' ')[0]} print-color-adjust" title="${cat.label}"></div>
+                                <span class="hidden print:inline-block text-black print-color-adjust"><div class="w-3 h-3">${SVGS[cat.icon]}</div></span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 font-mono font-bold print:py-tight">${ev.no || '-'}</td>
+                        <td class="px-4 py-3 font-mono whitespace-nowrap print:py-tight">${ev.start} - ${ev.end}</td>
+                        <td class="px-4 py-3 text-slate-600 print:py-tight">${dur}分</td>
+                        <td class="px-4 py-3 text-slate-600 print:max-w-none print-wrap-text truncate max-w-xs" title="${ev.desc}">${ev.desc}</td>
+                        <td class="px-4 py-3 text-center flex justify-center gap-2 no-print">
+                            <button onclick="editEvent('${ev.id}')" class="text-slate-400 hover:text-blue-600 transition-colors" title="修正"><div class="w-4 h-4">${SVGS.Edit3}</div></button>
+                            <button onclick="deleteEvent('${ev.id}')" class="text-slate-400 hover:text-red-500 transition-colors" title="削除"><div class="w-4 h-4">${SVGS.Trash2}</div></button>
+                        </td>
+                    </tr>`;
+            });
+
+            barsContainer.innerHTML = barsHtml || '<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-slate-300 font-bold text-lg pointer-events-none">データがありません。</div>';
+            listContainer.innerHTML = listHtml;
+        }
+
+        // ==========================================
+        // 4. アクション関数群
+        // ==========================================
+        function handleEnter(e, nextId) {
+            if(e.isComposing) return;
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                if(nextId === 'btn-submit') submitEvent();
+                else document.getElementById(nextId).focus();
+            }
+        }
+
+        function submitEvent() {
+            const fCat = document.getElementById('f-category').value;
+            const fNo = document.getElementById('f-no').value.trim();
+            const fStart = document.getElementById('f-start').value;
+            const fEnd = document.getElementById('f-end').value;
+            const fDesc = document.getElementById('f-desc').value.trim();
+            const fCont = document.getElementById('f-continuous').checked;
+
+            if(!fStart || !fEnd) { alert("開始時間と終了時間は必須です。"); return; }
+
+            const newEv = { id: editingId || Date.now().toString(), category: fCat, no: fNo, start: fStart, end: fEnd, desc: fDesc, isContinuous: fCont };
+
+            if(editingId) {
+                events = events.map(e => e.id === editingId ? newEv : e);
+            } else {
+                events.push(newEv);
+            }
+            
+            cancelEdit(); // フォームリセット
+            renderAll();
+            document.getElementById('f-category').focus();
+        }
+
+        function editEvent(id) {
+            const ev = events.find(e => e.id === id);
+            if(!ev) return;
+            editingId = id;
+            document.getElementById('f-category').value = ev.category;
+            document.getElementById('f-no').value = ev.no;
+            document.getElementById('f-start').value = ev.start;
+            document.getElementById('f-end').value = ev.end;
+            document.getElementById('f-desc').value = ev.desc;
+            document.getElementById('f-continuous').checked = ev.isContinuous;
+            
+            // UI更新
+            const area = document.getElementById('input-form-area');
+            area.classList.add('border-amber-400', 'ring-2', 'ring-amber-100');
+            document.getElementById('form-header').classList.replace('bg-blue-50/50', 'bg-amber-50');
+            document.getElementById('form-header').classList.replace('border-blue-100', 'border-amber-200');
+            document.getElementById('form-header-title').innerText = "タイムライン項目の修正";
+            document.getElementById('form-header-title').classList.replace('text-blue-900', 'text-amber-800');
+            document.getElementById('form-header-icon').innerHTML = `<div class="w-4 h-4">${SVGS.Edit3}</div>`;
+            document.getElementById('form-header-icon').classList.replace('text-blue-500', 'text-amber-600');
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            
+            const btn = document.getElementById('btn-submit');
+            btn.classList.replace('bg-blue-600', 'bg-amber-500');
+            btn.classList.replace('hover:bg-blue-700', 'hover:bg-amber-600');
+            document.getElementById('btn-submit-text').innerText = "更新";
+            document.getElementById('btn-submit-icon').innerHTML = `<div class="w-4 h-4">${SVGS.CheckCircle}</div>`;
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editingId = null;
+            document.getElementById('f-no').value = '';
+            document.getElementById('f-start').value = '';
+            document.getElementById('f-end').value = '';
+            document.getElementById('f-desc').value = '';
+            document.getElementById('f-continuous').checked = false;
+            
+            const area = document.getElementById('input-form-area');
+            area.classList.remove('border-amber-400', 'ring-2', 'ring-amber-100');
+            document.getElementById('form-header').classList.replace('bg-amber-50', 'bg-blue-50/50');
+            document.getElementById('form-header').classList.replace('border-amber-200', 'border-blue-100');
+            document.getElementById('form-header-title').innerText = "タイムライン項目の追加";
+            document.getElementById('form-header-title').classList.replace('text-amber-800', 'text-blue-900');
+            document.getElementById('form-header-icon').innerHTML = `<div class="w-4 h-4">${SVGS.Plus}</div>`;
+            document.getElementById('form-header-icon').classList.replace('text-amber-600', 'text-blue-500');
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+
+            const btn = document.getElementById('btn-submit');
+            btn.classList.replace('bg-amber-500', 'bg-blue-600');
+            btn.classList.replace('hover:bg-amber-600', 'hover:bg-blue-700');
+            document.getElementById('btn-submit-text').innerText = "追加";
+            document.getElementById('btn-submit-icon').innerHTML = `<div class="w-4 h-4">${SVGS.Plus}</div>`;
+        }
+
+        function deleteEvent(id) {
+            if(confirm("この項目を削除しますか？")) {
+                events = events.filter(e => e.id !== id);
+                if(editingId === id) cancelEdit();
+                renderAll();
+            }
+        }
+
+        function resetData() {
+            if(confirm("入力内容を全てクリアし、新規作成しますか？")) {
+                events = [];
+                cancelEdit();
+                document.getElementById('info-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('info-recorder').value = '';
+                document.getElementById('info-doctor').value = '';
+                document.getElementById('info-other-reason').value = '';
+                document.querySelectorAll('.reason-cb').forEach(cb => cb.checked = false);
+                updateSunTimes();
+                updateReasonSummary();
+                renderAll();
+            }
+        }
+
+        // ==========================================
+        // 5. モーダル・エクスポート
+        // ==========================================
+        function toggleModal(id) {
+            const el = document.getElementById(id);
+            if(el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                if(id === 'modal-qr' && window.QRious) {
+                    document.getElementById('qr-url-text').innerText = window.location.href;
+                    new QRious({ element: document.getElementById('qr-canvas'), value: window.location.href, size: 150 });
+                }
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+
+        function exportCSV() {
+            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+            const date = document.getElementById('info-date').value;
+            const rec = document.getElementById('info-recorder').value;
+            const doc = document.getElementById('info-doctor').value;
+            const reason = updateReasonSummary();
+            
+            let csv = `日付,${date}\n記載者,${rec}\n担当医師,${doc}\n浜町待機理由,${reason}\n\n`;
+            csv += "ID,事案番号,種別,開始時間,終了時間,活動時間(分),準備(分),復帰(分),連続出動,内容\n";
+            
+            events.forEach((ev, i) => {
+                const dur = timeToMinutes(ev.end) - timeToMinutes(ev.start);
+                let prep = getBasePrepDuration(ev);
+                if(i > 0 && events[i-1].isContinuous) prep = 0;
+                const recDuration = getRecoveryDuration(ev);
+                const catLbl = CATEGORIES[ev.category] ? CATEGORIES[ev.category].label : '';
+                
+                csv += [
+                    ev.id, ev.no, catLbl, ev.start, ev.end, dur, 
+                    prep > 0 ? prep : '', recDuration > 0 ? recDuration : '', 
+                    ev.isContinuous ? '◯' : '', `"${ev.desc.replace(/"/g, '""')}"`
+                ].join(',') + "\n";
+            });
+            
+            const blob = new Blob([bom, csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `daily_report_${date.replace(/-/g, '')}.csv`;
+            link.click();
+        }
+
+        function sendMail() {
+            const date = document.getElementById('info-date').value;
+            const rec = document.getElementById('info-recorder').value;
+            const doc = document.getElementById('info-doctor').value;
+            const reason = updateReasonSummary();
+            
+            const subject = encodeURIComponent(`【日報】ドクターヘリ活動実績 (${date}) - ${rec}`);
+            let bodyText = `日付: ${date}\n記載者: ${rec}\n担当医師: ${doc}\n待機理由: ${reason}\n\n【活動リスト】\n`;
+            
+            events.forEach(ev => {
+                const catLbl = CATEGORIES[ev.category] ? CATEGORIES[ev.category].label : '';
+                const cont = ev.isContinuous ? '(連続)' : '';
+                bodyText += `${ev.start}-${ev.end} [${catLbl}] ${ev.no ? '#'+ev.no : ''} ${ev.desc} ${cont}\n`;
+            });
+            
+            bodyText += `\n\n-----------------------------\n※ここにPDFファイルを添付してください。\n-----------------------------`;
+            window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+        }
+    </script>
+</body>
+</html>
