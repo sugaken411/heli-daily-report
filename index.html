@@ -19,40 +19,20 @@
     <style>
         @media print {
             @page { size: landscape; margin: 5mm; }
-            body { 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-                background: white; 
-                transform: scale(0.8);
-                transform-origin: top left;
-                width: 125%;
-                height: 100%;
-                margin: 0;
-            }
-            .no-print, #input-form-area { display: none !important; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; }
+            .no-print { display: none !important; }
             .print-full-width { width: 100% !important; min-width: 0 !important; overflow: visible !important; }
             .print-break-avoid { page-break-inside: avoid; }
             
-            .print-header-compact { display: flex !important; flex-wrap: wrap; gap: 16px; align-items: center; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 4px; font-size: 11pt; }
-            .print-header-item { display: flex; align-items: center; white-space: nowrap; }
-            .print-reason-box { font-size: 10pt; border: 1px solid #ddd; padding: 2px 4px; margin-bottom: 4px; min-height: auto !important; }
-
-            .print-chart-container { height: 120px !important; min-height: 120px !important; margin-bottom: 4px !important; border: 1px solid #ddd !important; overflow: hidden !important; position: relative !important; background-color: white !important; }
-            .print-time-label { top: 0 !important; font-size: 9pt !important; height: 20px !important; }
-            .print-grid-line { top: 20px !important; bottom: 0 !important; height: auto !important; }
-            .print-chart-bar-wrapper { top: 35px !important; transform: none !important; }
-            .print-chart-bar { height: 40px !important; min-height: 40px !important; } 
-            .print-icon-size { width: 14px !important; height: 14px !important; }
-
-            .print-list-header th { padding: 2px 4px !important; font-size: 10pt !important; background-color: #f3f4f6 !important; border-bottom: 1px solid #ccc !important; }
-            .print-list-row td { padding: 3px 4px !important; font-size: 10pt !important; border-bottom: 1px solid #eee !important; }
-            .print-wrap-text { white-space: pre-wrap !important; word-break: break-all !important; }
-            .print-footer { position: fixed; bottom: 0; right: 0; width: 100%; text-align: right; font-size: 9pt; color: #888; padding-top: 2px; border-top: 1px solid #eee; background: white; }
+            /* 印刷時にフォームエリアを確実に隠す */
+            #input-form-area { display: none !important; }
         }
+        /* スクロールバー装飾 */
         ::-webkit-scrollbar { height: 8px; width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
         .animate-fade-in { animation: fadeIn 0.2s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -63,13 +43,18 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        // --- アイコンコンポーネント ---
         const Icon = ({ path, className = "w-4 h-4" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {path}
             </svg>
         );
 
         const Icons = {
+            Calendar: (props) => <Icon {...props} path={<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>} />,
+            ArrowRight: (props) => <Icon {...props} path={<><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>} />,
+            AlertCircle: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>} />,
+            CheckCircle: (props) => <Icon {...props} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />,
             ClipboardList: (props) => <Icon {...props} path={<><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 12h.01"/><path d="M13 12h5"/><path d="M9 16h.01"/><path d="M13 16h5"/><path d="M9 8h.01"/><path d="M13 8h5"/></>} />,
             Plus: (props) => <Icon {...props} path={<><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>} />,
             Trash2: (props) => <Icon {...props} path={<><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></>} />,
@@ -84,14 +69,6 @@
             Printer: (props) => <Icon {...props} path={<><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></>} />,
             QrCode: (props) => <Icon {...props} path={<><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M3 14h7v7H3z"/></>} />,
             BookOpen: (props) => <Icon {...props} path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>} />,
-            AlertCircle: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>} />,
-            CheckCircle: (props) => <Icon {...props} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />,
-            Activity: (props) => <Icon {...props} path={<><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></>} />,
-            Folder: (props) => <Icon {...props} path={<><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></>} />,
-            Mail: (props) => <Icon {...props} path={<><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>} />,
-            Sun: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></>} />,
-            Moon: (props) => <Icon {...props} path={<><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></>} />,
-            Clock: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />,
         };
 
         const DailyTimelineApp = () => {
@@ -101,16 +78,12 @@
             const TOTAL_MINUTES = TOTAL_HOURS * 60;
 
             const CATEGORIES = {
-                MISSION: { id: 'mission', label: 'ヘリ活動 (実施)', color: 'bg-blue-600 border-blue-700', icon: Icons.CheckCircle, hasPrep: true, hasRecovery: true },
-                CANCEL: { id: 'cancel', label: 'ヘリ活動 (キャンセル)', color: 'bg-gray-400 border-gray-500', icon: Icons.AlertCircle, hasPrep: true, hasRecovery: true },
-                INSPECTION: { id: 'inspection', label: '始業点検・整備', color: 'bg-orange-400 border-orange-500', icon: Icons.Settings, hasPrep: false, hasRecovery: false },
-                ASSISTANT: { id: 'assistant', label: '補助者業務', color: 'bg-rose-400 border-rose-500', icon: Icons.Activity, hasPrep: false, hasRecovery: false },
-                MANAGEMENT: { id: 'management', label: '管理業務', color: 'bg-slate-500 border-slate-600', icon: Icons.Folder, hasPrep: false, hasRecovery: false },
-                GROUP: { id: 'group', label: 'グループ業務/会議', color: 'bg-teal-500 border-teal-600', icon: Icons.Users, hasPrep: false, hasRecovery: false },
-                OTHER: { id: 'other', label: 'その他活動', color: 'bg-purple-500 border-purple-600', icon: Icons.Briefcase, hasPrep: false, hasRecovery: false },
+                MISSION: { id: 'mission', label: 'ヘリ活動 (実施)', color: 'bg-blue-600 border-blue-700', hasPrep: true, hasRecovery: true },
+                CANCEL: { id: 'cancel', label: 'ヘリ活動 (キャンセル)', color: 'bg-gray-400 border-gray-500', hasPrep: true, hasRecovery: true },
+                INSPECTION: { id: 'inspection', label: '始業点検・整備', color: 'bg-orange-400 border-orange-500', hasPrep: false, hasRecovery: false },
+                GROUP: { id: 'group', label: 'グループ業務/会議', color: 'bg-teal-500 border-teal-600', hasPrep: false, hasRecovery: false },
+                OTHER: { id: 'other', label: 'その他活動', color: 'bg-purple-500 border-purple-600', hasPrep: false, hasRecovery: false },
             };
-
-            const REASON_OPTIONS = ["風向き", "天候不良", "強風", "機体トラブル"];
 
             const INITIAL_EVENTS = [
                 { id: '19248', category: 'mission', no: '19248', start: '08:46', end: '09:13', desc: '浜町HP〜LZ移動(12分)・待機 → 09:01接触 → 09:13引継完了。LZより次事案へ。', isContinuous: true },
@@ -123,62 +96,24 @@
                 { id: 'inspection-1', category: 'inspection', no: '', start: '08:30', end: '08:46', desc: '始業前点検・ブリーフィング（要請により中断）', isContinuous: false },
             ];
 
-            const [reportInfo, setReportInfo] = useState({ 
-                date: new Date().toISOString().split('T')[0], 
-                recorder: '', 
-                doctor: '', 
-                hamamachiReason: '',
-                selectedReasons: [],
-                otherReason: ''
-            });
+            const [reportInfo, setReportInfo] = useState({ date: '2025-12-23', recorder: '', doctor: '', hamamachiReason: '' });
             const [events, setEvents] = useState(INITIAL_EVENTS);
             const [formData, setFormData] = useState({ category: 'mission', no: '', start: '', end: '', desc: '', isContinuous: false });
             const [editingId, setEditingId] = useState(null);
             const [hoveredId, setHoveredId] = useState(null);
-            const [showManual, setShowManual] = useState(false);
             const [showQr, setShowQr] = useState(false);
-            const [sunTimes, setSunTimes] = useState({ sunrise: '--:--', sunset: '--:--', standbyEnd: '--:--' });
+            const [showManual, setShowManual] = useState(false);
+            const qrCanvasRef = useRef(null);
 
+            // Refs for focusing
             const categoryRef = useRef(null);
             const noRef = useRef(null);
             const startRef = useRef(null);
             const endRef = useRef(null);
             const descRef = useRef(null);
             const continuousRef = useRef(null);
-            const submitBtnRef = useRef(null);
-            const qrCanvasRef = useRef(null);
 
-            useEffect(() => {
-                if (!reportInfo.date) return;
-                try {
-                    const date = new Date(reportInfo.date);
-                    const lat = 31.5602;
-                    const lon = 130.558;
-                    if (window.SunCalc) {
-                        const times = SunCalc.getTimes(date, lat, lon);
-                        const formatTime = (dateObj) => dateObj.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-                        const sunsetTime = times.sunset;
-                        const sunsetMinus1h = new Date(sunsetTime.getTime() - 60 * 60 * 1000);
-                        const fixed1730 = new Date(date);
-                        fixed1730.setHours(17, 30, 0);
-                        const standbyEnd = (sunsetMinus1h < fixed1730) ? sunsetMinus1h : fixed1730;
-                        setSunTimes({ sunrise: formatTime(times.sunrise), sunset: formatTime(times.sunset), standbyEnd: formatTime(standbyEnd) });
-                    }
-                } catch (e) {
-                    console.error("SunCalc error", e);
-                }
-            }, [reportInfo.date]);
-
-            useEffect(() => {
-                if (showQr && qrCanvasRef.current && window.QRious) {
-                    new QRious({
-                        element: qrCanvasRef.current,
-                        value: window.location.href,
-                        size: 150
-                    });
-                }
-            }, [showQr]);
-
+            // --- ヘルパー関数 ---
             const timeToMinutes = (timeStr) => {
                 if (!timeStr) return 0;
                 const [hours, minutes] = timeStr.split(':').map(Number);
@@ -207,36 +142,11 @@
                 return { left: `${left}%`, width: `${width}%` };
             };
 
-            const handleReportInfoChange = (e) => {
-                const { name, value } = e.target;
-                setReportInfo(prev => {
-                    const newInfo = { ...prev, [name]: value };
-                    if (name === 'otherReason') {
-                        const reasons = [...prev.selectedReasons];
-                        if (value) reasons.push(value);
-                        newInfo.hamamachiReason = reasons.join('、');
-                    }
-                    return newInfo;
-                });
-            };
-
-            const handleReasonCheck = (reason) => {
-                setReportInfo(prev => {
-                    const currentReasons = prev.selectedReasons || [];
-                    let newReasons;
-                    if (currentReasons.includes(reason)) {
-                        newReasons = currentReasons.filter(r => r !== reason);
-                    } else {
-                        newReasons = [...currentReasons, reason];
-                    }
-                    const combined = [...newReasons];
-                    if (prev.otherReason) combined.push(prev.otherReason);
-                    return { ...prev, selectedReasons: newReasons, hamamachiReason: combined.join('、') };
-                });
-            };
-
+            // --- イベントハンドラ ---
+            const handleReportInfoChange = (e) => setReportInfo(prev => ({ ...prev, [e.target.name]: e.target.value }));
             const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
 
+            // Enterキーでのフォーカス移動
             const handleKeyDown = (e, nextRef) => {
                 if (e.nativeEvent.isComposing) return;
                 if (e.key === 'Enter') {
@@ -275,7 +185,16 @@
                     setEvents([...events, newEvent].sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start)));
                 }
                 
-                setFormData(prev => ({ category: prev.category, no: '', start: '', end: '', desc: '', isContinuous: false }));
+                // データ追加後のリセット処理（カテゴリは維持）
+                setFormData(prev => ({
+                    category: prev.category, 
+                    no: '',
+                    start: '',
+                    end: '',
+                    desc: '',
+                    isContinuous: false
+                }));
+                
                 if (categoryRef.current) categoryRef.current.focus();
             };
 
@@ -287,46 +206,23 @@
             };
 
             const handleReset = () => {
-                if(window.confirm('入力を全て消去し、新規作成しますか？')) {
+                if(window.confirm('入力内容を全てクリアしますか？')) {
                     setEvents([]);
                     setEditingId(null);
-                    setReportInfo({ date: new Date().toISOString().split('T')[0], recorder: '', doctor: '', hamamachiReason: '', selectedReasons: [], otherReason: '' });
+                    setReportInfo({ date: new Date().toISOString().split('T')[0], recorder: '', doctor: '', hamamachiReason: '' });
                 }
             };
 
             const handlePrint = () => {
                 if (window.location.protocol !== 'file:' && window.location.hostname === '') {
-                     alert("注意: プレビュー画面では印刷が正しく機能しない場合があります。");
+                     alert("注意: プレビュー画面では印刷が正しく機能しない場合があります。ファイルをダウンロードして開いてから印刷してください。");
                 }
                 window.print();
             };
 
-            const handleSendMail = () => {
-                const subject = encodeURIComponent(`【日報】ドクターヘリ活動実績 (${reportInfo.date}) - ${reportInfo.recorder}`);
-                const reasonsList = [...(reportInfo.selectedReasons || [])];
-                if (reportInfo.otherReason) reasonsList.push(reportInfo.otherReason);
-                const reasonStr = reasonsList.join('、');
-                let bodyText = `日付: ${reportInfo.date}\n記載者: ${reportInfo.recorder}\n担当医師: ${reportInfo.doctor}\n待機理由: ${reasonStr}\n\n`;
-                bodyText += `【活動リスト】\n`;
-                const sortedEvents = [...events].sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
-                sortedEvents.forEach(ev => {
-                    const cat = Object.values(CATEGORIES).find(c => c.id === ev.category)?.label;
-                    const cont = ev.isContinuous ? '(連続)' : '';
-                    bodyText += `${ev.start}-${ev.end} [${cat}] ${ev.no ? '#' + ev.no : ''} ${ev.desc} ${cont}\n`;
-                });
-                bodyText += `\n\n-----------------------------\n`;
-                bodyText += `※ここにPDFファイルを添付してください。\n`;
-                bodyText += `-----------------------------`;
-                const body = encodeURIComponent(bodyText);
-                window.location.href = `mailto:?subject=${subject}&body=${body}`;
-            };
-
             const handleExportCSV = () => {
                 const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-                const reasonsList = [...(reportInfo.selectedReasons || [])];
-                if (reportInfo.otherReason) reasonsList.push(reportInfo.otherReason);
-                const reasonStr = reasonsList.join('、');
-                let csvContent = `日付,${reportInfo.date}\n記載者,${reportInfo.recorder}\n担当医師,${reportInfo.doctor}\n浜町待機理由,${reasonStr}\n\n`;
+                let csvContent = `日付,${reportInfo.date}\n記載者,${reportInfo.recorder}\n担当医師,${reportInfo.doctor}\n浜町待機理由,${reportInfo.hamamachiReason.replace(/,/g, '、')}\n\n`;
                 csvContent += "ID,事案番号,種別,開始時間,終了時間,活動時間(分),準備(分),復帰(分),連続出動,内容\n";
                 const sortedEvents = [...events].sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
                 sortedEvents.forEach((event, index) => {
@@ -347,11 +243,20 @@
                 link.click();
             };
 
-            const toggleManual = () => setShowManual(!showManual);
             const toggleQr = () => setShowQr(!showQr);
+            const toggleManual = () => setShowManual(!showManual);
+
+            useEffect(() => {
+                if (showQr && qrCanvasRef.current) {
+                    new QRious({
+                        element: qrCanvasRef.current,
+                        value: window.location.href,
+                        size: 150
+                    });
+                }
+            }, [showQr]);
 
             const sortedEvents = [...events].sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
-            const printDateStr = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
             return (
                 <div className="p-4 max-w-full mx-auto min-h-screen font-sans print:bg-white print:p-0">
@@ -363,15 +268,13 @@
                                 <Icons.ClipboardList className="w-5 h-5 text-blue-600 print:text-black" />
                                 <h1 className="text-lg font-bold text-slate-800 print:text-black print:text-xl">業務日報データ / 活動実績チャート</h1>
                             </div>
-                            <div className="flex gap-2 no-print items-center h-10">
-                                <button onClick={toggleManual} className="h-10 px-3 rounded border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center gap-1 transition-colors text-xs" title="マニュアルを表示"><Icons.BookOpen className="w-3.5 h-3.5"/> 説明書</button>
-                                <button onClick={toggleQr} className="h-10 px-3 rounded border border-slate-300 hover:bg-slate-100 text-slate-600 flex items-center gap-1 transition-colors text-xs" title="現在のページのQRコードを表示"><Icons.QrCode className="w-3.5 h-3.5"/></button>
-                                <div className="h-6 w-px bg-slate-300 mx-1"></div>
-                                <button onClick={handleReset} className="h-10 px-3 rounded border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 flex items-center gap-1 transition-colors font-bold text-xs"><Icons.RotateCcw className="w-3 h-3"/> 新規作成</button>
-                                <div className="h-6 w-px bg-slate-300 mx-1"></div>
-                                <button onClick={handlePrint} className="h-10 px-3 rounded bg-slate-700 hover:bg-slate-800 text-white flex items-center gap-1 transition-colors font-medium text-xs"><Icons.Printer className="w-3.5 h-3.5"/> 印刷/PDF</button>
-                                <button onClick={handleExportCSV} className="h-10 px-3 rounded bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 transition-colors font-medium text-xs"><Icons.FileSpreadsheet className="w-3.5 h-3.5"/> CSV出力</button>
-                                <button onClick={handleSendMail} className="h-10 px-3 rounded bg-sky-500 hover:bg-sky-600 text-white flex items-center gap-1 transition-colors font-medium text-xs"><Icons.Mail className="w-3.5 h-3.5"/> メール作成</button>
+                            <div className="flex gap-2 no-print items-center">
+                                <button onClick={toggleManual} className="text-xs px-2 py-1.5 rounded border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center gap-1 transition-colors" title="マニュアルを表示"><Icons.BookOpen className="w-3.5 h-3.5"/> 説明書</button>
+                                <button onClick={toggleQr} className="text-xs px-2 py-1.5 rounded border border-slate-300 hover:bg-slate-100 text-slate-600 flex items-center gap-1 transition-colors" title="現在のページのQRコードを表示"><Icons.QrCode className="w-3.5 h-3.5"/></button>
+                                <div className="h-4 w-px bg-slate-300 mx-1"></div>
+                                <button onClick={handleReset} className="text-xs px-3 py-1.5 rounded border border-slate-300 hover:bg-slate-100 text-slate-600 flex items-center gap-1 transition-colors"><Icons.RotateCcw className="w-3 h-3"/> クリア</button>
+                                <button onClick={handlePrint} className="text-xs px-3 py-1.5 rounded bg-slate-700 hover:bg-slate-800 text-white flex items-center gap-1 transition-colors font-medium"><Icons.Printer className="w-3.5 h-3.5"/> 印刷/PDF</button>
+                                <button onClick={handleExportCSV} className="text-xs px-3 py-1.5 rounded bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 transition-colors font-medium"><Icons.FileSpreadsheet className="w-3.5 h-3.5"/> CSV出力</button>
                             </div>
                         </div>
 
@@ -391,10 +294,11 @@
                                             <li><span className="font-bold text-orange-600">始業点検・整備:</span> 始業前点検、定時点検など。</li>
                                             <li><span className="font-bold text-teal-600">グループ業務/会議:</span> ブリーフィング、カンファレンスなど。</li>
                                         </ul>
+
                                         <h3 className="font-bold text-slate-900 mb-2">2. 時間の自動計算ルール</h3>
                                         <div className="bg-slate-50 p-3 rounded mb-4 border border-slate-200">
-                                            <p className="font-bold mb-1">離陸スタンバイ (10分)</p>
-                                            <p className="text-xs mb-2">「ヘリ活動」の開始10分前を自動的にスタンバイ時間として表示します。ただし、前の事案が「連続出動」の場合は表示されません。</p>
+                                            <p className="font-bold mb-1">準備時間 (10分)</p>
+                                            <p className="text-xs mb-2">「ヘリ活動」の開始10分前を自動的に準備時間として表示します。ただし、前の事案が「連続出動」の場合は表示されません。</p>
                                             <p className="font-bold mb-1">復帰時間</p>
                                             <ul className="list-disc pl-5 text-xs">
                                                 <li>キャンセル: <strong>+10分</strong></li>
@@ -403,6 +307,13 @@
                                                 <li>連続出動: <strong>0分</strong></li>
                                             </ul>
                                         </div>
+
+                                        <h3 className="font-bold text-slate-900 mb-2">3. 入力・操作方法</h3>
+                                        <ul className="list-disc pl-5 mb-4 space-y-1">
+                                            <li><strong>Enterキー:</strong> 次の入力欄へ移動します。「連続出動」チェックボックスでEnterを押すとデータが追加されます。</li>
+                                            <li><strong>連続出動:</strong> 帰投せず次の事案へ向かう場合チェックします。復帰時間が0になり、次の事案の準備時間も省略されます。</li>
+                                            <li><strong>印刷/PDF:</strong> 画面右上のボタンから、入力フォームを除いたきれいな状態で印刷・PDF保存が可能です。</li>
+                                        </ul>
                                     </div>
                                     <div className="mt-6 text-right">
                                         <button onClick={toggleManual} className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">閉じる</button>
@@ -422,73 +333,36 @@
 
                         <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 print:p-0 print:gap-4 print:mt-4">
                             <div className="space-y-4 print:space-y-2">
-                                <div className="print:flex print:gap-4 items-center print-header-compact">
-                                    <div className="print-header-item">
-                                        <label className="block text-xs font-bold text-slate-500 mb-1 print:hidden">日付</label>
-                                        <div className="print:hidden"><input type="date" name="date" value={reportInfo.date} onChange={handleReportInfoChange} className="w-full text-sm border-slate-300 rounded-md shadow-sm p-2 border" /></div>
-                                        <div className="hidden print:block"><span className="font-bold mr-1">日付:</span> {reportInfo.date}</div>
-                                    </div>
-                                    <div className="print-header-item hidden print:block border-l border-slate-300 pl-3 ml-3">
-                                        <div className="flex gap-2 text-[9px] text-slate-600">
-                                            <div className="flex items-center gap-1"><Icons.Sun className="w-3 h-3"/> <span>{sunTimes.sunrise}</span></div>
-                                            <div className="flex items-center gap-1"><Icons.Moon className="w-3 h-3"/> <span>{sunTimes.sunset}</span></div>
-                                            <div className="flex items-center gap-1 font-bold ml-1"><Icons.Clock className="w-3 h-3"/> <span>待機終了: {sunTimes.standbyEnd}</span></div>
-                                        </div>
-                                    </div>
-                                    <div className="ml-4 flex gap-3 text-[10px] bg-amber-50 px-2 py-1 rounded border border-amber-100 text-amber-800 print:hidden">
-                                        <div className="flex items-center gap-1"><Icons.Sun className="w-3 h-3"/> <span>{sunTimes.sunrise}</span></div>
-                                        <div className="flex items-center gap-1"><Icons.Moon className="w-3 h-3"/> <span>{sunTimes.sunset}</span></div>
-                                        <div className="flex items-center gap-1 border-l border-amber-200 pl-2 font-bold"><Icons.Clock className="w-3 h-3"/> <span>待機終了: {sunTimes.standbyEnd}</span></div>
-                                    </div>
+                                <div className="print:flex print:gap-4 items-center">
+                                    <label className="block text-xs font-bold text-slate-500 mb-1 print:hidden">日付</label>
+                                    <div className="print:hidden"><input type="date" name="date" value={reportInfo.date} onChange={handleReportInfoChange} className="w-full text-sm border-slate-300 rounded-md shadow-sm p-2 border" /></div>
+                                    <div className="hidden print:block text-sm"><span className="font-bold mr-2">日付:</span> {reportInfo.date}</div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 print:flex print:gap-4 print-header-compact" style={{border: 'none'}}>
-                                    <div className="print-header-item">
+                                <div className="grid grid-cols-2 gap-2 print:flex print:gap-6">
+                                    <div>
                                         <label className="block text-xs font-bold text-slate-500 mb-1 print:hidden">記載者</label>
                                         <div className="relative print:hidden">
                                             <div className="absolute left-2 top-2.5"><Icons.User className="w-4 h-4 text-slate-400" /></div>
                                             <input type="text" name="recorder" value={reportInfo.recorder} onChange={handleReportInfoChange} placeholder="氏名" className="w-full pl-8 text-sm border-slate-300 rounded-md shadow-sm p-2 border" />
                                         </div>
-                                        <div className="hidden print:block"><span className="font-bold mr-1">記載者:</span> {reportInfo.recorder || '(未入力)'}</div>
+                                        <div className="hidden print:block text-sm"><span className="font-bold mr-2">記載者:</span> {reportInfo.recorder || '(未入力)'}</div>
                                     </div>
-                                    <div className="print-header-item">
+                                    <div>
                                         <label className="block text-xs font-bold text-slate-500 mb-1 print:hidden">担当医師</label>
                                         <div className="relative print:hidden">
                                             <div className="absolute left-2 top-2.5"><Icons.User className="w-4 h-4 text-slate-400" /></div>
                                             <input type="text" name="doctor" value={reportInfo.doctor} onChange={handleReportInfoChange} placeholder="氏名" className="w-full pl-8 text-sm border-slate-300 rounded-md shadow-sm p-2 border" />
                                         </div>
-                                        <div className="hidden print:block"><span className="font-bold mr-1">担当医師:</span> {reportInfo.doctor || '(未入力)'}</div>
+                                        <div className="hidden print:block text-sm"><span className="font-bold mr-2">担当医師:</span> {reportInfo.doctor || '(未入力)'}</div>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div className="md:col-span-2 print:mt-0">
-                                <label className="block text-xs font-bold text-slate-500 mb-2 print:hidden">浜町待機理由 / 特記事項</label>
-                                <div className="print:hidden mb-2 flex flex-wrap gap-3">
-                                    {REASON_OPTIONS.map(reason => (
-                                        <label key={reason} className="flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-slate-200 text-sm hover:bg-slate-50">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={(reportInfo.selectedReasons || []).includes(reason)}
-                                                onChange={() => handleReasonCheck(reason)}
-                                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                            />
-                                            {reason}
-                                        </label>
-                                    ))}
-                                </div>
-                                <input 
-                                    type="text"
-                                    name="otherReason" 
-                                    value={reportInfo.otherReason} 
-                                    onChange={handleReportInfoChange} 
-                                    placeholder="その他・特記事項 (フリーコメント)" 
-                                    className="w-full text-sm border-slate-300 rounded-md shadow-sm p-2 border print:hidden" 
-                                />
-                                <div className="hidden print:block print-reason-box">
-                                    <span className="font-bold mr-2">待機理由/備考:</span>
-                                    {((reportInfo.selectedReasons || []).length > 0 || reportInfo.otherReason) 
-                                        ? [...(reportInfo.selectedReasons || []), reportInfo.otherReason].filter(Boolean).join('、') 
-                                        : '特になし'}
+                            <div className="md:col-span-2 print:mt-2">
+                                <label className="block text-xs font-bold text-slate-500 mb-1 print:hidden">浜町待機理由 / 特記事項</label>
+                                <textarea name="hamamachiReason" value={reportInfo.hamamachiReason} onChange={handleReportInfoChange} placeholder="天候不良（東風）のため待機、機体不具合など..." className="w-full h-24 text-sm border-slate-300 rounded-md shadow-sm resize-none print:hidden p-2 border" />
+                                <div className="hidden print:block text-sm border border-slate-300 rounded p-2 min-h-[60px]">
+                                    <span className="font-bold block text-xs text-slate-500 mb-1">浜町待機理由 / 特記事項:</span>
+                                    {reportInfo.hamamachiReason || '特になし'}
                                 </div>
                             </div>
                         </div>
@@ -587,7 +461,6 @@
                             </div>
                             <div className="md:col-span-2">
                                 <button 
-                                    ref={submitBtnRef}
                                     type="button" 
                                     onClick={handleAddOrUpdate} 
                                     className={`w-full text-white font-medium h-10 rounded-md shadow-sm flex justify-center items-center gap-1 transition-colors ${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}
@@ -600,37 +473,35 @@
 
                     {/* Legend */}
                     <div className="flex flex-wrap gap-3 mb-4 px-2 print:mb-2 print-break-avoid">
-                        {Object.values(CATEGORIES).map(c => {
-                            const IconComp = c.icon;
-                            return (
-                                <div key={c.id} className="flex items-center gap-2 text-xs bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm print:border-slate-300 print:shadow-none print:py-tight print:mb-1">
-                                    <div className={`w-3 h-3 rounded-full ${c.color.split(' ')[0]} print-color-adjust`}></div>
-                                    <span className="text-slate-500 print:text-black hidden print:inline"><IconComp className="w-3 h-3" /></span>
-                                    <span className="text-slate-700">{c.label}</span>
-                                </div>
-                            );
-                        })}
-                        <div className="flex items-center gap-2 text-xs bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm print:border-slate-300 print:py-tight print:mb-1">
+                        {Object.values(CATEGORIES).map(c => (
+                            <div key={c.id} className="flex items-center gap-2 text-xs bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm print:border-slate-300 print:shadow-none">
+                                <div className={`w-3 h-3 rounded-full ${c.color.split(' ')[0]} print-color-adjust`}></div>
+                                <span className="text-slate-700">{c.label}</span>
+                            </div>
+                        ))}
+                        <div className="flex items-center gap-2 text-xs bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm print:border-slate-300">
                             <div className="w-3 h-3 bg-yellow-400 opacity-50 striped-bg print-color-adjust"></div>
-                            <span className="text-slate-500">離陸スタンバイ</span>
+                            <span className="text-slate-500">準備(10分)</span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm print:border-slate-300 print:py-tight print:mb-1">
+                        <div className="flex items-center gap-2 text-xs bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm print:border-slate-300">
                             <div className="w-3 h-3 bg-green-100 border border-green-200 print-color-adjust"></div>
                             <span className="text-slate-500">復帰作業</span>
                         </div>
                     </div>
 
                     {/* Timeline */}
-                    <div className="relative bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden min-h-[180px] mb-8 print:shadow-none print:border print:mb-2 print-break-avoid print-chart-container">
-                        <div className="overflow-x-auto pb-4 pt-4 relative min-w-[1200px] print-full-width print-chart-inner">
-                            <div className="absolute top-4 left-4 right-4 h-6 pointer-events-none select-none z-20 print-time-label">
+                    <div className="relative bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden min-h-[400px] mb-8 print:shadow-none print:border print:mb-4 print-break-avoid">
+                        <div className="overflow-x-auto pb-12 pt-12 relative min-w-[1200px] print-full-width">
+                            {/* Time Labels */}
+                            <div className="absolute top-4 left-4 right-4 h-6 pointer-events-none select-none z-20">
                                 {Array.from({ length: Math.floor(TOTAL_HOURS) + 1 }).map((_, i) => (
                                     <div key={i} className="absolute transform -translate-x-1/2" style={{ left: `${(i / TOTAL_HOURS) * 100}%` }}>
-                                        <span className="text-xs font-bold text-slate-400 print:text-slate-600 print-text-xs">{START_HOUR + i}:00</span>
+                                        <span className="text-xs font-bold text-slate-400 print:text-slate-600">{START_HOUR + i}:00</span>
                                     </div>
                                 ))}
                             </div>
-                            <div className="absolute top-10 left-4 right-4 bottom-4 pointer-events-none select-none z-0 print-grid-line">
+                            {/* Grid */}
+                            <div className="absolute top-10 left-4 right-4 bottom-4 pointer-events-none select-none z-0">
                                 {Array.from({ length: Math.floor(TOTAL_HOURS) + 1 }).map((_, i) => (
                                     <div key={`line-${i}`} className="absolute top-0 bottom-0 w-px bg-slate-100 print:bg-slate-200 transform -translate-x-1/2" style={{ left: `${(i / TOTAL_HOURS) * 100}%` }}></div>
                                 ))}
@@ -638,7 +509,8 @@
                                     <div key={`dash-${i}`} className="absolute top-0 bottom-0 w-px border-l border-slate-200 border-dashed opacity-60 print:opacity-40 transform -translate-x-1/2" style={{ left: `${((i + 0.5) / TOTAL_HOURS) * 100}%` }}></div>
                                 ))}
                             </div>
-                            <div className="relative h-24 mt-10 mx-4 z-10 print-chart-height">
+                            {/* Events */}
+                            <div className="relative h-[300px] mt-6 mx-4 z-10">
                                 <div className="absolute top-1/2 left-0 w-full h-px bg-slate-200 print:bg-slate-300 -z-10"></div>
                                 {sortedEvents.length === 0 && <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-slate-300 font-bold text-lg pointer-events-none">データがありません。</div>}
                                 {sortedEvents.map((event, index) => {
@@ -657,23 +529,28 @@
                                     const categoryConfig = Object.values(CATEGORIES).find(c => c.id === event.category) || CATEGORIES.OTHER;
                                     const isHovered = hoveredId === event.id;
                                     const isEditing = editingId === event.id;
-                                    const IconComponent = categoryConfig.icon;
                                     
                                     return (
                                         <div key={event.id} className="absolute h-full pointer-events-none" style={{ width: '100%', top: 0, zIndex: 20 }}>
+                                            {/* Prep */}
                                             {prepDuration > 0 && (
-                                                <div className="absolute transform -translate-y-1/2 h-10 bg-yellow-400/30 border-l border-t border-b border-yellow-400/50 rounded-l-md pointer-events-auto transition-all print-color-adjust print-chart-bar-wrapper"
+                                                <div className="absolute transform -translate-y-1/2 h-10 bg-yellow-400/30 border-l border-t border-b border-yellow-400/50 rounded-l-md pointer-events-auto transition-all print-color-adjust"
                                                     style={{ top: '50%', left: prepPos.left, width: prepPos.width, backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,.3) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.3) 50%, rgba(255,255,255,.3) 75%, transparent 75%, transparent)', backgroundSize: '10px 10px' }}
-                                                    title="離陸スタンバイ (10分)" />
+                                                    title="要請・準備・エンジンスタート (10分)" />
                                             )}
-                                            <div className={`absolute transform -translate-y-1/2 transition-all duration-300 pointer-events-auto group rounded-md border-b-4 shadow-sm flex flex-col justify-center items-center cursor-pointer overflow-hidden ${categoryConfig.color} ${isHovered || isEditing ? 'scale-105 shadow-md brightness-110 z-30' : ''} ${isEditing ? 'ring-2 ring-amber-400' : ''} print-color-adjust print-chart-bar-wrapper print-chart-bar`}
+                                            {/* Main */}
+                                            <div className={`absolute transform -translate-y-1/2 transition-all duration-300 pointer-events-auto group rounded-md border-b-4 shadow-sm flex flex-col justify-center items-center cursor-pointer overflow-hidden ${categoryConfig.color} ${isHovered || isEditing ? 'scale-105 shadow-md brightness-110 z-30' : ''} ${isEditing ? 'ring-2 ring-amber-400' : ''} print-color-adjust`}
                                                 style={{ top: '50%', left: mainPos.left, width: mainPos.width, height: '64px' }}
                                                 onClick={() => handleEditClick(event)}
                                                 onMouseEnter={() => setHoveredId(event.id)}
                                                 onMouseLeave={() => setHoveredId(null)}
                                             >
                                                 <div className="flex items-center gap-1 text-white font-bold text-xs px-1">
-                                                    {IconComponent && <IconComponent className="w-4 h-4 print:w-3 print:h-3 print:text-white print-icon-size" />}
+                                                    {event.category === 'cancel' && <Icons.AlertCircle className="w-4 h-4" />}
+                                                    {event.category === 'group' && <Icons.Users className="w-4 h-4" />}
+                                                    {event.category === 'inspection' && <Icons.Settings className="w-4 h-4" />}
+                                                    {event.category === 'mission' && <Icons.CheckCircle className="w-4 h-4" />}
+                                                    {event.category === 'other' && <Icons.Briefcase className="w-4 h-4" />}
                                                 </div>
                                                 {isHovered && !isEditing && (
                                                     <div className="absolute bottom-full mb-2 w-64 bg-slate-800 text-white text-xs rounded p-3 shadow-xl z-50 pointer-events-none left-1/2 -translate-x-1/2 no-print">
@@ -684,10 +561,12 @@
                                                     </div>
                                                 )}
                                             </div>
+                                            {/* Recovery */}
                                             {recoveryDuration > 0 && (
-                                                <div className="absolute transform -translate-y-1/2 h-10 bg-green-50 border border-green-200 border-l-0 rounded-r-md pointer-events-auto flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity print-color-adjust print-chart-bar-wrapper"
+                                                <div className="absolute transform -translate-y-1/2 h-10 bg-green-50 border border-green-200 border-l-0 rounded-r-md pointer-events-auto flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity print-color-adjust"
                                                     style={{ top: '50%', left: recoveryPos.left, width: recoveryPos.width }}
                                                     title={`復帰作業・記録・整備 (${recoveryDuration}分)`}>
+                                                    <span className="text-[9px] text-green-700 font-medium truncate px-1">{parseFloat(recoveryPos.width) > 3 ? `復帰${recoveryDuration}` : ''}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -699,18 +578,18 @@
 
                     {/* List */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border print-break-avoid">
-                        <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 font-semibold text-slate-700 flex items-center gap-2 text-sm print:bg-white print:border-b-2 print:border-slate-800 print:py-tight">
+                        <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 font-semibold text-slate-700 flex items-center gap-2 text-sm print:bg-white print:border-b-2 print:border-slate-800">
                             <Icons.ClipboardList className="w-4 h-4" /> 登録済みデータリスト
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm print-text-xs">
+                            <table className="w-full text-left text-sm">
                                 <thead className="bg-slate-50 text-slate-500 text-xs uppercase print:bg-white print:text-black print:border-b">
-                                    <tr className="print-list-header">
-                                        <th className="px-4 py-3 w-16 print:py-tight">種別</th>
-                                        <th className="px-4 py-3 w-24 print:py-tight">No/ID</th>
-                                        <th className="px-4 py-3 w-32 print:py-tight">時間</th>
-                                        <th className="px-4 py-3 w-24 print:py-tight">所要時間</th>
-                                        <th className="px-4 py-3 print:py-tight">内容</th>
+                                    <tr>
+                                        <th className="px-4 py-3 w-16">種別</th>
+                                        <th className="px-4 py-3 w-24">No/ID</th>
+                                        <th className="px-4 py-3 w-32">時間</th>
+                                        <th className="px-4 py-3 w-24">所要時間</th>
+                                        <th className="px-4 py-3">内容</th>
                                         <th className="px-4 py-3 w-24 text-center no-print">操作</th>
                                     </tr>
                                 </thead>
@@ -719,23 +598,15 @@
                                         const startMins = timeToMinutes(event.start);
                                         const endMins = timeToMinutes(event.end);
                                         const cat = Object.values(CATEGORIES).find(c => c.id === event.category) || CATEGORIES.OTHER;
-                                        const IconComponent = cat.icon;
                                         const isHovered = hoveredId === event.id;
                                         const isEditing = editingId === event.id;
                                         return (
-                                            <tr key={event.id} className={`transition-colors print-list-row ${isEditing ? 'bg-amber-50' : isHovered ? 'bg-yellow-50' : 'hover:bg-slate-50'} print:bg-white`} onMouseEnter={() => setHoveredId(event.id)} onMouseLeave={() => setHoveredId(null)}>
-                                                <td className="px-4 py-3 print:py-tight">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-3 h-3 rounded-full ${cat.color.split(' ')[0]} print-color-adjust`} title={cat.label}></div>
-                                                        <span className="hidden print:inline-block text-black print-color-adjust">
-                                                            {IconComponent && <IconComponent className="w-3 h-3" />}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3 font-mono font-bold print:py-tight">{event.no || '-'}</td>
-                                                <td className="px-4 py-3 font-mono whitespace-nowrap print:py-tight">{event.start} - {event.end}</td>
-                                                <td className="px-4 py-3 text-slate-600 print:py-tight">{endMins - startMins}分</td>
-                                                <td className="px-4 py-3 text-slate-600 print:max-w-none print-wrap-text" title={event.desc}>{event.desc}</td>
+                                            <tr key={event.id} className={`transition-colors ${isEditing ? 'bg-amber-50' : isHovered ? 'bg-yellow-50' : 'hover:bg-slate-50'} print:bg-white`} onMouseEnter={() => setHoveredId(event.id)} onMouseLeave={() => setHoveredId(null)}>
+                                                <td className="px-4 py-3"><div className={`w-3 h-3 rounded-full ${cat.color.split(' ')[0]} print-color-adjust`} title={cat.label}></div></td>
+                                                <td className="px-4 py-3 font-mono font-bold">{event.no || '-'}</td>
+                                                <td className="px-4 py-3 font-mono whitespace-nowrap">{event.start} - {event.end}</td>
+                                                <td className="px-4 py-3 text-slate-600">{endMins - startMins}分</td>
+                                                <td className="px-4 py-3 text-slate-600 truncate max-w-xs print:max-w-none print:whitespace-normal" title={event.desc}>{event.desc}</td>
                                                 <td className="px-4 py-3 text-center flex justify-center gap-2 no-print">
                                                     <button onClick={() => handleEditClick(event)} className={`transition-colors ${isEditing ? 'text-amber-600' : 'text-slate-400 hover:text-blue-600'}`} title="修正"><Icons.Edit3 className="w-4 h-4" /></button>
                                                     <button onClick={() => handleDelete(event.id)} className="text-slate-400 hover:text-red-500 transition-colors" title="削除"><Icons.Trash2 className="w-4 h-4" /></button>
@@ -746,11 +617,6 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-
-                    {/* Print Footer */}
-                    <div className="hidden print:block print-footer">
-                        ドクターヘリ業務日報 | 出力日: {printDateStr}
                     </div>
                 </div>
             );
